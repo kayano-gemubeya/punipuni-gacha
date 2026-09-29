@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>妖怪ウォッチぷにぷに ガチャ確率計算</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans JP",
+        sans-serif;
+    background: #f3f5fa;
+    color: #222;
+}
+
+header {
+    background: #171c30;
+    color: white;
+    padding: 20px;
+}
+
+.header-inner {
+    max-width: 1200px;
+    margin: auto;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+header p {
+    margin: 6px 0 0;
+    color: #c8cde0;
+}
+
+main {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+.notice {
+    background: #fff8d9;
+    border: 1px solid #ead98c;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 15px;
+    line-height: 1.7;
+}
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.tab {
+    border: 1px solid #d5d9e5;
+    background: white;
+    padding: 11px 20px;
+    border-radius: 9px 9px 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tab.active {
+    background: #5369e8;
+    color: white;
+    border-color: #5369e8;
+    font-weight: bold;
+}
+
+.panel {
+    background: white;
+    border: 1px solid #e0e3eb;
+    border-radius: 13px;
+    padding: 18px;
+    margin-bottom: 15px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+h2, h3 {
+    margin-top: 0;
+}
+
+button {
+    cursor: pointer;
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 14px;
+}
+
+.primary {
+    background: #5369e8;
+    color: white;
+    font-weight: bold;
+}
+
+.secondary {
+    background: #edf0f7;
+}
+
+.danger {
+    background: #f3dfe3;
+    color: #9a3042;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+th,
+td {
+    border-bottom: 1px solid #e5e8ef;
+    padding: 9px;
+    text-align: left;
+}
+
+th {
+    background: #f7f8fb;
+    color: #687188;
+    font-size: 13px;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d5dae5;
+    border-radius: 7px;
+    background: white;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.card {
+    border: 1px solid #e0e4ee;
+    border-radius: 10px;
+    padding: 13px;
+    background: #fafbfe;
+}
+
+.card-title {
+    color: #6c7588;
+    font-size: 12px;
+}
+
+.card-value {
+    font-size: 23px;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.result-box {
+    border: 1px solid #e1e5ee;
+    border-radius: 10px;
+    padding: 13px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px dashed #dfe3eb;
+    padding: 8px 0;
+}
+
+.result-row:last-child {
+    border-bottom: none;
+}
+
+.percent {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.muted {
+    color: #737c8f;
+    font-size: 13px;
+}
+
+.hidden {
+    display: none;
+}
+
+footer {
+    text-align: center;
+    color: #8991a3;
+    font-size: 12px;
+    padding: 20px;
+}
+
+@media (max-width: 700px) {
+
+    .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="header-inner">
+    <h1>妖怪ウォッチ ぷにぷに</h1>
+    <p>ガチャ確率計算ツール</p>
+</div>
+</header>
+
+<main>
+
+<div class="notice">
+    <strong>確率計算について</strong><br>
+    1連の確率を入力すると、各連数で「1回以上出る確率」を計算します。<br>
+    計算式：<code>1 - (1 - p)^n</code><br>
+    例：1連が1%の場合、10連は約9.56%、100連は約63.40%です。
+</div>
+
+<div class="tabs">
+    <button class="tab active" data-gacha="first">
+        初日ガチャ
+    </button>
+
+    <button class="tab" data-gacha="up">
+        超アップ（予想）
+    </button>
+
+    <button class="tab" data-gacha="discount">
+        割引（予想）
+    </button>
+
+    <button class="tab" data-gacha="last">
+        ラスチャン
+    </button>
+</div>
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+    <h2 id="gachaTitle">初日ガチャ</h2>
+    <p class="muted">
+        1連の提供割合を入力してください。
+    </p>
+</div>
+
+<div class="controls">
+
+<label>
+    <input type="checkbox" id="ohagoru">
+    おはごる（スタミナイベント）
+</label>
+
+<button class="primary" id="addCharacter">
+    ＋ 行を追加
+</button>
+
+</div>
+
+</div>
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+<th>ランク</th>
+<th>名前</th>
+<th>1連確率(%)</th>
+<th>区分</th>
+<th>イベントキャラ</th>
+<th></th>
+</tr>
+
+</thead>
+
+<tbody id="characterTable"></tbody>
+
+</table>
+
+</div>
+
+<p class="muted">
+新キャラ以外は、名前を「ランク合算」などにして、そのランク全体の確率を入力できます。
+おはごるの場合は「通常特攻」「乱入特攻」を指定してください。
+</p>
+
+</section>
+
+
+<section class="panel">
+
+<h2>基本結果</h2>
+
+<div class="cards">
+
+<div class="card">
+<div class="card-title">
+Uz++ 一点狙い
+</div>
+<div class="card-value" id="uzppRate">
+0%
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">
+Uz+ 一点狙い
+</div>
+<div class="card-value" id="uzpRate">
+0%
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">
+Uz 一点狙い
+</div>
+<div class="card-value" id="uzRate">
+0%
+</div>
+</div>
+
+</div>
+
+
+<div class="results-grid">
+
+<div class="result-box">
+
+<h3>ランク別確率</h3>
+
+<div id="rankResults"></div>
+
+</div>
+
+
+<div class="result-box">
+
+<h3>イベントキャラ</h3>
+
+<div id="eventResults"></div>
+
+</div>
+
+
+<div class="result-box hidden" id="ohagoruBox">
+
+<h3>おはごる特攻</h3>
+
+<div id="ohagoruResults"></div>
+
+</div>
+
+
+<div class="result-box">
+
+<h3>キャラ別確率</h3>
+
+<div id="characterResults"></div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="panel">
+
+<h2>連数別「1回以上出る確率」</h2>
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+<th>対象</th>
+<th>1連</th>
+<th>10連</th>
+<th>30連</th>
+<th>50連</th>
+<th>100連</th>
+<th>200連</th>
+</tr>
+
+</thead>
+
+<tbody id="pullResults"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="panel">
+
+<h2>データ管理</h2>
+
+<div class="controls">
+
+<button class="secondary" id="exportData">
+データ保存
+</button>
+
+<label class="secondary" style="padding:9px 14px;border-radius:8px;">
+データ読込
+<input
+    type="file"
+    id="importData"
+    accept=".json"
+    style="display:none"
+>
+</label>
+
+<button class="danger" id="resetData">
+全データ削除
+</button>
+
+</div>
+
+<p class="muted">
+入力データはこのブラウザに保存されます。
+イベント更新時にJSON保存しておくとバックアップできます。
+</p>
+
+</section>
+
+</main>
+
+
+<footer>
+妖怪ウォッチぷにぷに 非公式ファン向けツール
+</footer>
+
+
+<script>
+
+const ranks = [
+    "Z",
+    "ZZ",
+    "ZZZ",
+    "Uz",
+    "Uz+",
+    "Uz++"
+];
+
+const pullCounts = [
+    1,
+    10,
+    30,
+    50,
+    100,
+    200
+];
+
+const gachaNames = {
+    first: "初日ガチャ",
+    up: "超アップ（予想）",
+    discount: "割引（予想）",
+    last: "ラスチャン"
+};
+
+let currentGacha = "first";
+
+
+let data =
+JSON.parse(
+    localStorage.getItem("punipuniGachaData")
+) || {
+
+    first: {
+        ohagoru: false,
+        rows: []
+    },
+
+    up: {
+        ohagoru: false,
+        rows: []
+    },
+
+    discount: {
+        ohagoru: false,
+        rows: []
+    },
+
+    last: {
+        ohagoru: false,
+        rows: []
+    }
+
+};
+
+
+function saveData() {
+
+    localStorage.setItem(
+        "punipuniGachaData",
+        JSON.stringify(data)
+    );
+
+}
+
+
+function probability(row) {
+
+    const value = Number(row.probability);
+
+    if (!Number.isFinite(value) || value <= 0) {
+        return 0;
+    }
+
+    return value / 100;
+
+}
+
+
+/*
+    n連で1回以上当たる確率
+
+    1 - (1-p)^n
+*/
+function atLeastOne(probabilityValue, pulls) {
+
+    return 1 -
+        Math.pow(
+            1 - probabilityValue,
+            pulls
+        );
+
+}
+
+
+function formatPercent(value) {
+
+    if (!Number.isFinite(value)) {
+        return "0%";
+    }
+
+    const percent = value * 100;
+
+    if (percent >= 99.9999) {
+        return "100%";
+    }
+
+    if (percent === 0) {
+        return "0%";
+    }
+
+    if (percent < 0.01) {
+        return percent.toFixed(4) + "%";
+    }
+
+    return percent.toFixed(2) + "%";
+
+}
+
+
+function addRow(
+    row = {
+
+        rank: "Uz++",
+
+        name: "",
+
+        probability: "",
+
+        type: "通常",
+
+        event: false
+
+    }
+) {
+
+    data[currentGacha].rows.push(row);
+
+    saveData();
+
+    render();
+
+}
+
+
+function renderTable() {
+
+    const tbody =
+        document.getElementById(
+            "characterTable"
+        );
+
+    tbody.innerHTML = "";
+
+
+    data[currentGacha].rows.forEach(
+        (row, index) => {
+
+            const tr =
+                document.createElement("tr");
+
+
+            tr.innerHTML = `
+
+<td>
+
+<select data-index="${index}"
+        data-key="rank">
+
+${ranks.map(rank => `
+
+<option
+    value="${rank}"
+    ${row.rank === rank ? "selected" : ""}
+>
+${rank}
+</option>
+
+`).join("")}
+
+</select>
+
+</td>
+
+
+<td>
+
+<input
+    type="text"
+    placeholder="キャラ名 / ランク合算"
+    value="${escapeHTML(row.name)}"
+    data-index="${index}"
+    data-key="name"
+>
+
+</td>
+
+
+<td>
+
+<input
+    type="number"
+    min="0"
+    max="100"
+    step="0.0001"
+    placeholder="1"
+    value="${row.probability}"
+    data-index="${index}"
+    data-key="probability"
+>
+
+</td>
+
+
+<td>
+
+<select data-index="${index}"
+        data-key="type">
+
+<option
+    value="通常"
+    ${row.type === "通常" ? "selected" : ""}
+>
+通常
+</option>
+
+<option
+    value="通常特攻"
+    ${row.type === "通常特攻" ? "selected" : ""}
+>
+通常特攻
+</option>
+
+<option
+    value="乱入特攻"
+    ${row.type === "乱入特攻" ? "selected" : ""}
+>
+乱入特攻
+</option>
+
+</select>
+
+</td>
+
+
+<td style="text-align:center">
+
+<input
+    type="checkbox"
+    ${row.event ? "checked" : ""}
+    data-index="${index}"
+    data-key="event"
+>
+
+</td>
+
+
+<td>
+
+<button
+    class="danger"
+    data-remove="${index}"
+>
+削除
+</button>
+
+</td>
+
+`;
+
+            tbody.appendChild(tr);
+
+        }
+    );
+
+
+    tbody
+        .querySelectorAll("[data-index]")
+        .forEach(element => {
+
+            element.addEventListener(
+                "input",
+                updateRow
+            );
+
+            element.addEventListener(
+                "change",
+                updateRow
+            );
+
+        });
+
+
+    tbody
+        .querySelectorAll("[data-remove]")
+        .forEach(button => {
+
+            button.onclick = () => {
+
+                const index =
+                    Number(
+                        button.dataset.remove
+                    );
+
+                data[currentGacha]
+                    .rows
+                    .splice(index, 1);
+
+                saveData();
+
+                render();
+
+            };
+
+        });
+
+}
+
+
+function updateRow(event) {
+
+    const element = event.target;
+
+    const index =
+        Number(element.dataset.index);
+
+    const key =
+        element.dataset.key;
+
+
+    if (element.type === "checkbox") {
+
+        data[currentGacha]
+            .rows[index][key] =
+            element.checked;
+
+    } else {
+
+        data[currentGacha]
+            .rows[index][key] =
+            element.value;
+
+    }
+
+
+    saveData();
+
+    calculate();
+
+}
+
+
+function groupByRank() {
+
+    const result = {};
+
+    ranks.forEach(rank => {
+        result[rank] = 0;
+    });
+
+
+    data[currentGacha].rows
+        .forEach(row => {
+
+            result[row.rank] +=
+                probability(row);
+
+        });
+
+
+    return result;
+
+}
+
+
+function sumWhere(callback) {
+
+    return data[currentGacha]
+        .rows
+        .reduce(
+            (total, row) => {
+
+                if (callback(row)) {
+                    return total +
+                        probability(row);
+                }
+
+                return total;
+
+            },
+            0
+        );
+
+}
+
+
+function resultRow(label, value) {
+
+    return `
+
+<div class="result-row">
+
+<span>
+${escapeHTML(label)}
+</span>
+
+<span class="percent">
+${formatPercent(value)}
+</span>
+
+</div>
+
+`;
+
+}
+
+
+function calculate() {
+
+    const rows =
+        data[currentGacha].rows;
+
+
+    const rankRates =
+        groupByRank();
+
+
+    const uzpp =
+        sumWhere(
+            row => row.rank === "Uz++"
+        );
+
+    const uzp =
+        sumWhere(
+            row => row.rank === "Uz+"
+        );
+
+    const uz =
+        sumWhere(
+            row => row.rank === "Uz"
+        );
+
+
+    const event =
+        sumWhere(
+            row => row.event === true
+        );
+
+
+    const normalSpecial =
+        sumWhere(
+            row => row.type === "通常特攻"
+        );
+
+
+    const ambushSpecial =
+        sumWhere(
+            row => row.type === "乱入特攻"
+        );
+
+
+    document.getElementById(
+        "uzppRate"
+    ).textContent =
+        formatPercent(uzpp);
+
+
+    document.getElementById(
+        "uzpRate"
+    ).textContent =
+        formatPercent(uzp);
+
+
+    document.getElementById(
+        "uzRate"
+    ).textContent =
+        formatPercent(uz);
+
+
+    /*
+        ランク別
+    */
+
+    const rankResults =
+        document.getElementById(
+            "rankResults"
+        );
+
+    rankResults.innerHTML =
+        ranks.map(
+            rank =>
+                resultRow(
+                    rank,
+                    rankRates[rank]
+                )
+        ).join("");
+
+
+    /*
+        イベントキャラ
+    */
+
+    const eventResults =
+        document.getElementById(
+            "eventResults"
+        );
+
+
+    if (event > 0) {
+
+        eventResults.innerHTML =
+            resultRow(
+                "イベントキャラ合計",
+                event
+            );
+
+    } else {
+
+        eventResults.innerHTML =
+            `<p class="muted">
+                イベントキャラにチェックされた
+                キャラがありません。
+            </p>`;
+
+    }
+
+
+    /*
+        おはごる
+    */
+
+    const ohagoruBox =
+        document.getElementById(
+            "ohagoruBox"
+        );
+
+
+    if (
+        data[currentGacha].ohagoru
+    ) {
+
+        ohagoruBox.classList.remove(
+            "hidden"
+        );
+
+
+        document.getElementById(
+            "ohagoruResults"
+        ).innerHTML =
+
+            resultRow(
+                "通常特攻",
+                normalSpecial
+            )
+
+            +
+
+            resultRow(
+                "乱入特攻",
+                ambushSpecial
+            );
+
+    } else {
+
+        ohagoruBox.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    /*
+        キャラ別
+    */
+
+    const characterResults =
+        document.getElementById(
+            "characterResults"
+        );
+
+
+    const individual =
+        rows.filter(
+            row =>
+                row.name &&
+                probability(row) > 0 &&
+                (
+                    row.rank === "Uz++" ||
+                    row.rank === "Uz+" ||
+                    row.rank === "Uz"
+                )
+        );
+
+
+    if (individual.length === 0) {
+
+        characterResults.innerHTML =
+            `<p class="muted">
+                Uz / Uz+ / Uz++ の
+                キャラ名を入力すると表示されます。
+            </p>`;
+
+    } else {
+
+        characterResults.innerHTML =
+            individual
+                .map(
+                    row =>
+                        resultRow(
+                            `${row.rank} / ${row.name}`,
+                            probability(row)
+                        )
+                )
+                .join("");
+
+    }
+
+
+    /*
+        連数別
+    */
+
+    const targets = [];
+
+
+    individual.forEach(row => {
+
+        targets.push({
+            name:
+                `${row.rank} / ${row.name}`,
+            probability:
+                probability(row)
+        });
+
+    });
+
+
+    targets.push(
+        {
+            name: "Uz++ 合計",
+            probability: uzpp
+        },
+        {
+            name: "Uz+ 合計",
+            probability: uzp
+        },
+        {
+            name: "Uz 合計",
+            probability: uz
+        }
+    );
+
+
+    if (event > 0) {
+
+        targets.push({
+            name:
+                "イベントキャラ（1体以上）",
+            probability:
+                event
+        });
+
+    }
+
+
+    if (
+        data[currentGacha].ohagoru
+    ) {
+
+        if (normalSpecial > 0) {
+
+            targets.push({
+                name: "通常特攻",
+                probability:
+                    normalSpecial
+            });
+
+        }
+
+
+        if (ambushSpecial > 0) {
+
+            targets.push({
+                name: "乱入特攻",
+                probability:
+                    ambushSpecial
+            });
+
+        }
+
+    }
+
+
+    const pullResults =
+        document.getElementById(
+            "pullResults"
+        );
+
+
+    if (targets.length === 0) {
+
+        pullResults.innerHTML = `
+<tr>
+<td colspan="7">
+<p class="muted">
+確率を入力してください。
+</p>
+</td>
+</tr>
+`;
+
+    } else {
+
+        pullResults.innerHTML =
+            targets.map(target => {
+
+                return `
+
+<tr>
+
+<td>
+${escapeHTML(target.name)}
+</td>
+
+${pullCounts.map(
+    pulls => `
+
+<td>
+${formatPercent(
+    atLeastOne(
+        target.probability,
+        pulls
+    )
+)}
+</td>
+
+`
+).join("")}
+
+</tr>
+
+`;
+
+            }).join("");
+
+    }
+
+}
+
+
+function escapeHTML(value) {
+
+    return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+function render() {
+
+    document.getElementById(
+        "gachaTitle"
+    ).textContent =
+        gachaNames[currentGacha];
+
+
+    document.querySelectorAll(
+        ".tab"
+    ).forEach(button => {
+
+        button.classList.toggle(
+            "active",
+            button.dataset.gacha ===
+                currentGacha
+        );
+
+    });
+
+
+    document.getElementById(
+        "ohagoru"
+    ).checked =
+        data[currentGacha].ohagoru;
+
+
+    renderTable();
+
+    calculate();
+
+}
+
+
+/*
+    ガチャ切り替え
+*/
+
+document
+    .querySelectorAll(".tab")
+    .forEach(button => {
+
+        button.onclick = () => {
+
+            currentGacha =
+                button.dataset.gacha;
+
+            render();
+
+        };
+
+    });
+
+
+/*
+    行追加
+*/
+
+document.getElementById(
+    "addCharacter"
+).onclick = () => {
+
+    addRow();
+
+};
+
+
+/*
+    おはごる
+*/
+
+document.getElementById(
+    "ohagoru"
+).onchange = event => {
+
+    data[currentGacha]
+        .ohagoru =
+        event.target.checked;
+
+    saveData();
+
+    calculate();
+
+};
+
+
+/*
+    データ保存
+*/
+
+document.getElementById(
+    "exportData"
+).onclick = () => {
+
+    const blob =
+        new Blob(
+            [
+                JSON.stringify(
+                    data,
+                    null,
+                    2
+                )
+            ],
+            {
+                type:
+                    "application/json"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const link =
+        document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        "punipuni-gacha-data.json";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+};
+
+
+/*
+    データ読込
+*/
+
+document.getElementById(
+    "importData"
+).onchange = event => {
+
+    const file =
+        event.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload = () => {
+
+        try {
+
+            const imported =
+                JSON.parse(
+                    reader.result
+                );
+
+
+            if (
+                !imported.first ||
+                !imported.up ||
+                !imported.discount ||
+                !imported.last
+            ) {
+
+                throw new Error();
+
+            }
+
+
+            data = imported;
+
+            saveData();
+
+            render();
+
+            alert(
+                "データを読み込みました。"
+            );
+
+        } catch {
+
+            alert(
+                "データの読み込みに失敗しました。"
+            );
+
+        }
+
+    };
+
+
+    reader.readAsText(file);
+
+};
+
+
+/*
+    全データ削除
+*/
+
+document.getElementById(
+    "resetData"
+).onclick = () => {
+
+    if (
+        !confirm(
+            "保存されている全ガチャデータを削除しますか？"
+        )
+    ) {
+        return;
+    }
+
+
+    data = {
+
+        first: {
+            ohagoru: false,
+            rows: []
+        },
+
+        up: {
+            ohagoru: false,
+            rows: []
+        },
+
+        discount: {
+            ohagoru: false,
+            rows: []
+        },
+
+        last: {
+            ohagoru: false,
+            rows: []
+        }
+
+    };
+
+
+    saveData();
+
+    render();
+
+};
+
+
+/*
+    初期表示
+*/
+
+render();
+
+</script>
+
+</body>
+</html>
